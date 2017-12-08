@@ -1,4 +1,10 @@
-# toogle
+# toogle [![Build Status][build]](https://circleci.com/gh/bcherny/toogle) [![npm]](https://www.npmjs.com/package/toogle) [![mit]](https://opensource.org/licenses/MIT)
+
+[build]: https://img.shields.io/circleci/project/bcherny/toogle.svg?branch=master&style=flat-square
+[npm]: https://img.shields.io/npm/v/toogle.svg?style=flat-square
+[mit]: https://img.shields.io/npm/l/toogle.svg?style=flat-square
+
+> Hoogle for TypeScript
 
 ## High level design
 
@@ -44,6 +50,7 @@ A user queries Toogle like so:
 - `A`             `Generic('A')`
 - `number`        `Simple('number')`
 - `A[]`           `List(Generic('A'))`
-- `A -> B`        `Function1(Generic('A'), Generic('B'))
-- `A B -> B`      `Function2(Generic('A'), Generic('B'), Generic('B'))
-- `A, B -> B`     `Function2(Generic('A'), Generic('B'), Generic('B'))
+- `-> A`          `Function0(Generic('A'))`
+- `A -> B`        `Function1(Generic('A'), Generic('B'))`
+- `A B -> B`      `Function2(Generic('A'), Generic('B'), Generic('B'))`
+- `A, B -> B`     `Function2(Generic('A'), Generic('B'), Generic('B'))`

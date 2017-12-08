@@ -1,4 +1,4 @@
-import { alt, regexp, seq, string } from 'parsimmon'
+import { alt, lazy, regexp, seqMap, string, whitespace } from 'parsimmon'
 
 let simple = alt(
   string('boolean'),
@@ -7,18 +7,30 @@ let simple = alt(
   string('string'),
   string('undefined'),
   string('void')
-).map((_: any) => Simple(_)) // TODO
+).map(_ => Simple(_ as Simples))
 
 let generic = regexp(/([A-Z][\w\d]*)/)
   .map(([A, b]) => Generic(A + (b || '')))
+  .desc('Generic type variable (eg. "A")')
 
-let type = alt(simple, generic)
+let list = seqMap(simple.or(generic), string('[]'), List)
+let primitive = lazy(() => alt(list, simple, generic))
 
-let list = seq(type, string('[]'))
-  .map(([a]) => List(a))
+let space = whitespace.many()
+let arrow = space.then(string('->').or(string('=>')).skip(space)).desc('Arrow')
+let div = space.or(space.then(string(',')).skip(space)).desc(',')
+let fn0 = seqMap(arrow.then(primitive), Function0)
+let fn1 = seqMap(primitive.skip(arrow), primitive, Function1)
+let fn2 = seqMap(primitive.skip(div), primitive.skip(arrow), primitive, Function2)
+let fn3 = seqMap(primitive.skip(div), primitive.skip(div), primitive.skip(arrow), primitive, Function3)
+let fn4 = seqMap(primitive.skip(div), primitive.skip(div), primitive.skip(div), primitive.skip(arrow), primitive, Function4)
+let fn5 = seqMap(primitive.skip(div), primitive.skip(div), primitive.skip(div), primitive.skip(div), primitive.skip(arrow), primitive, Function5)
+let fn = alt(fn0, fn1, fn2, fn3, fn4, fn5)
+
+let node = alt(fn, list, simple, generic)
 
 export function parse(input: string): Node {
-  let r = alt(list, type).parse(input)
+  let r = node.parse(input)
   if (r.status) {
     return r.value
   }
@@ -39,7 +51,8 @@ export function parse(input: string): Node {
 
 // Types
 
-type Node = Function1<any, any>
+type Node = Function0<any>
+  | Function1<any, any>
   | Function2<any, any, any>
   | Function3<any, any, any, any>
   | Function4<any, any, any, any, any>
@@ -47,6 +60,11 @@ type Node = Function1<any, any>
   | Generic
   | List<any>
   | Simple<any>
+
+type Function0<A extends Node> = {
+  to: A
+  type: 'Function0'
+}
 
 type Function1<A extends Node, B extends Node> = {
   from1: A
@@ -103,6 +121,10 @@ type Simples = 'boolean' | 'number' | 'null' | 'string' | 'undefined' | 'void'
 type List<A extends Node> = {
   of: A
   type: 'List'
+}
+
+export function Function0<A extends Node>(to: A): Function0<A> {
+  return { type: 'Function0', to }
 }
 
 export function Function1<A extends Node, B extends Node>(from1: A, to: B): Function1<A, B> {
