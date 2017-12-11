@@ -94,46 +94,79 @@ export type Union<A extends Node, B extends Node> = {
 
 // AST generation
 
+/**
+ * @typedoc
+ */
 export function Function0<A extends Node>(to: A): Function0<A> {
   return { type: 'Function0', to }
 }
 
+/**
+ * @typedoc
+ */
 export function Function1<A extends Node, B extends Node>(from1: A, to: B): Function1<A, B> {
   return { type: 'Function1', from1, to }
 }
 
+/**
+ * @typedoc
+ */
 export function Function2<A extends Node, B extends Node, C extends Node>(from1: A, from2: B, to: C): Function2<A, B, C> {
   return { type: 'Function2', from1, from2, to }
 }
 
+/**
+ * @typedoc
+ */
 export function Function3<A extends Node, B extends Node, C extends Node, D extends Node>(from1: A, from2: B, from3: C, to: D): Function3<A, B, C, D> {
   return { type: 'Function3', from1, from2, from3, to }
 }
 
+/**
+ * @typedoc
+ */
 export function Function4<A extends Node, B extends Node, C extends Node, D extends Node, E extends Node>(from1: A, from2: B, from3: C, from4: D, to: E): Function4<A, B, C, D, E> {
   return { type: 'Function4', from1, from2, from3, from4, to }
 }
 
+/**
+ * @typedoc
+ */
 export function Function5<A extends Node, B extends Node, C extends Node, D extends Node, E extends Node, F extends Node>(from1: A, from2: B, from3: C, from4: D, from5: E, to: F): Function5<A, B, C, D, E, F> {
   return { type: 'Function5', from1, from2, from3, from4, from5, to }
 }
 
+/**
+ * @typedoc
+ */
 export function Generic(name: string): Generic {
   return { type: 'Generic', name }
 }
 
+/**
+ * @typedoc
+ */
 export function Intersection<A extends Node, B extends Node>(left: A, right: B): Intersection<A, B> {
   return { type: 'Intersection', left, right }
 }
 
+/**
+ * @typedoc
+ */
 export function List<A extends Node>(of: A): List<A> {
   return { type: 'List', of }
 }
 
+/**
+ * @typedoc
+ */
 export function Simple<A extends SimpleTypeString>(of: A): Simple<A> {
   return { type: 'Simple', of }
 }
 
+/**
+ * @typedoc
+ */
 export function Union<A extends Node, B extends Node>(left: A, right: B): Union<A, B> {
   return { type: 'Union', left, right }
 }
