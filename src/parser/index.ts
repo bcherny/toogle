@@ -1,53 +1,96 @@
-import { alt, lazy, regexp, seqMap, string, whitespace } from 'parsimmon'
+import { alt, createLanguage, optWhitespace, regexp, seqMap, string, TypedRule, whitespace } from 'parsimmon'
 
-let simple = alt(
-  string('boolean'),
-  string('null'),
-  string('number'),
-  string('string'),
-  string('undefined'),
-  string('void')
-).map(_ => Simple(_ as Simples))
+type Spec = {
+  Arrow: string
+  Div: string
+  Fn: Spec['Fn0'] | Spec['Fn1'] | Spec['Fn2'] | Spec['Fn3'] | Spec['Fn4'] | Spec['Fn5']
+  Fn0: Function0<any>
+  Fn1: Function1<any, any>
+  Fn2: Function2<any, any, any>
+  Fn3: Function3<any, any, any, any>
+  Fn4: Function4<any, any, any, any, any>
+  Fn5: Function5<any, any, any, any, any, any>
+  Generic: Generic
+  List: List<any>
+  Node: Node
+  Primitive: List<any> | Simple<Simples> | Generic
+  Simple: Simple<Simples>
+}
 
-let generic = regexp(/([A-Z][\w\d]*)/)
-  .map(([A, b]) => Generic(A + (b || '')))
-  .desc('Generic type variable (eg. "A")')
+let Lang: TypedRule<Spec> = {
+  Simple() {
+    return alt(
+      string('boolean'),
+      string('null'),
+      string('number'),
+      string('string'),
+      string('undefined'),
+      string('void')
+    ).map(_ => Simple(_ as Simples))
+  },
 
-let list = seqMap(simple.or(generic), string('[]'), List)
-let primitive = lazy(() => alt(list, simple, generic))
+  Generic() {
+    return regexp(/([A-Z][\w\d]*)/)
+      .map(([A, b]) => Generic(A + (b || '')))
+  },
 
-let space = whitespace.many()
-let arrow = space.then(string('->').or(string('=>')).skip(space)).desc('Arrow')
-let div = space.or(space.then(string(',')).skip(space)).desc(',')
-let fn0 = seqMap(arrow.then(primitive), Function0)
-let fn1 = seqMap(primitive.skip(arrow), primitive, Function1)
-let fn2 = seqMap(primitive.skip(div), primitive.skip(arrow), primitive, Function2)
-let fn3 = seqMap(primitive.skip(div), primitive.skip(div), primitive.skip(arrow), primitive, Function3)
-let fn4 = seqMap(primitive.skip(div), primitive.skip(div), primitive.skip(div), primitive.skip(arrow), primitive, Function4)
-let fn5 = seqMap(primitive.skip(div), primitive.skip(div), primitive.skip(div), primitive.skip(div), primitive.skip(arrow), primitive, Function5)
-let fn = alt(fn0, fn1, fn2, fn3, fn4, fn5)
+  Arrow() {
+    return optWhitespace.then(alt(string('->'), string('=>'))).then(optWhitespace).desc('Arrow')
+  },
 
-let node = alt(fn, list, simple, generic)
+  Div() {
+    return alt(
+      optWhitespace.then(string(',')).then(optWhitespace),
+      whitespace.atLeast(1)
+    )
+    .desc(',')
+  },
+
+  Fn(r) {
+    return alt(r.Fn0, r.Fn1, r.Fn2, r.Fn3, r.Fn4, r.Fn5)
+  },
+
+  Fn0(r) {
+    return seqMap(r.Arrow.then(r.Primitive), Function0)
+  },
+  Fn1(r) {
+    return seqMap(r.Primitive.skip(r.Arrow), r.Primitive, Function1)
+  },
+  Fn2(r) {
+    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function2)
+  },
+  Fn3(r) {
+    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function3)
+  },
+  Fn4(r) {
+    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function4)
+  },
+  Fn5(r) {
+    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function5)
+  },
+
+  List(r) {
+    return seqMap(alt(r.Simple, r.Generic), string('[]'), List)
+  },
+
+  Node(r) {
+    return alt(r.Fn, r.List, r.Simple, r.Generic)
+  },
+
+  Primitive(r) {
+    return alt(r.List, r.Simple, r.Generic)
+  }
+}
+
+let Language = createLanguage(Lang)
 
 export function parse(input: string): Node {
-  let r = node.parse(input)
+  let r = Language.Node.parse(input)
   if (r.status) {
     return r.value
   }
   throw r.expected
 }
-
-// Queries
-
-// type Query = { thisType: Node }
-//   | { arg0: Node }
-//   | { arg0: Node, arg1: Node }
-//   | { arg0: Node, arg1: Node, arg2: Node }
-//   | { arg0: Node, arg1: Node, arg2: Node, arg3: Node }
-//   | { arg0: Node, arg1: Node, arg2: Node, arg3: Node, arg4: Node }
-//   | { arg0: Node, arg1: Node, arg2: Node, arg3: Node, arg4: Node, arg5: Node }
-//   | { arg0: Node, arg1: Node, arg2: Node, arg3: Node, arg4: Node, arg5: Node, arg6: Node }
-//   | { arg0: Node, arg1: Node, arg2: Node, arg3: Node, arg4: Node, arg5: Node, arg6: Node, arg7: Node }
 
 // Types
 

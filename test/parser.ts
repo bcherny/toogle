@@ -21,6 +21,12 @@ test('A -> B', t =>
   t.deepEqual(parse('A -> B'), Function1(Generic('A'), Generic('B')))
 )
 
-test('A, B -> number', t =>
-  t.deepEqual(parse('A, B -> number'), Function2(Generic('A'), Generic('B'), Simple('number')))
-)
+test('A, B -> number', t => {
+  let _ = Function2(Generic('A'), Generic('B'), Simple('number'))
+  t.deepEqual(parse('A,B -> number'), _)
+  t.deepEqual(parse('A, B -> number'), _)
+  t.deepEqual(parse('A , B -> number'), _)
+  t.deepEqual(parse('A   ,    B -> number'), _)
+  t.deepEqual(parse('A B -> number'), _)
+  t.deepEqual(parse('A   B -> number'), _)
+})
