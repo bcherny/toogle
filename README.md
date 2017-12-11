@@ -20,6 +20,49 @@
 
 ## Usage
 
+### 1. Annotate your files
+
+Add a JSDoc comment to any function you want Typedex to annotate for you. For example:
+
+```js
+/**
+ * @typedex
+ */
+function add(a, b) {
+  return a + b
+}
+```
+
+You can also add optional annotations for parameter descriptions, examples, etc. For example:
+
+```js
+/**
+ * Adds two numbers `a` and `b`.
+ *
+ * @typedex
+ * @category Number
+ * @param {number} a The first number to add.
+ * @param {number} b The second number to add.
+ * @returns {number} Returns the sum of the two numbers.
+ * @see subtract, multiply, divide
+ * @example
+ *
+ * let x = 1
+ * let y = 2
+ * let z = add(x, y)
+ * // => 3
+ */
+function add(a, b) {
+  return a + b
+}
+```
+
+### 2. Index your code and generate a static Typedex site
+
+TODO
+
+### 3. Search!
+
 In general, we aim to:
 
 1. Begin returning results as early as possible, as the user types

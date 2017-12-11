@@ -1,5 +1,6 @@
 import { test } from 'ava'
-import { Function0, Function1, Function2, Generic, Intersection, List, parse, Simple, Union } from '../src/parser'
+import { Function0, Function1, Function2, Generic, Intersection, List, Simple, Union } from '../src/ast'
+import { parse } from '../src/parser'
 
 test('number', t =>
   t.deepEqual(parse('number'), Simple('number'))
@@ -11,6 +12,10 @@ test('number[]', t =>
 
 test('A[]', t =>
   t.deepEqual(parse('A[]'), List(Generic('A')))
+)
+
+test('Array<A>', t =>
+  t.deepEqual(parse('Array<A>'), List(Generic('A')))
 )
 
 test('-> A', t =>

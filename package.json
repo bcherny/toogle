@@ -8,6 +8,7 @@
     "build": "tsc",
     "build:watch": "tsc -w",
     "test": "ava",
+    "test:debug": "node --inspect-brk ./node_modules/ava/profile.js ./dist/test/adapters/typescript.js",
     "test:watch": "ava -w"
   },
   "devDependencies": {
@@ -20,7 +21,8 @@
   },
   "ava": {
     "files": [
-      "dist/test/*.js"
+      "dist/test/*.js",
+      "dist/test/adapters/*.js"
     ]
   }
 }
