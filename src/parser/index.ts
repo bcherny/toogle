@@ -1,8 +1,6 @@
 import { alt, createLanguage, optWhitespace, regexp, seqMap, string, TypedRule, whitespace } from 'parsimmon'
 
 type Spec = {
-  Arrow: string
-  Div: string
   Fn: Spec['Fn0'] | Spec['Fn1'] | Spec['Fn2'] | Spec['Fn3'] | Spec['Fn4'] | Spec['Fn5']
   Fn0: Function0<any>
   Fn1: Function1<any, any>
@@ -11,13 +9,66 @@ type Spec = {
   Fn4: Function4<any, any, any, any, any>
   Fn5: Function5<any, any, any, any, any, any>
   Generic: Generic
+  Intersection: Intersection<any, any>
   List: List<any>
-  Node: Node
   Primitive: List<any> | Simple<Simples> | Generic
   Simple: Simple<Simples>
+  Union: Union<any, any>
 }
 
-let Lang: TypedRule<Spec> = {
+let Spec: TypedRule<Spec> = {
+
+  Generic() {
+    return regexp(/([A-Z][\w\d]*)/)
+      .map(([A, b]) => Generic(A + (b || '')))
+      .desc('Generic type (eg. "A")')
+  },
+
+  Fn(r) {
+    return alt(r.Fn0, r.Fn1, r.Fn2, r.Fn3, r.Fn4, r.Fn5)
+      .desc('Function')
+  },
+
+  // TODO: Change Primitive -> Node
+  Fn0(r) {
+    return seqMap(Arrow.then(r.Primitive), Function0)
+  },
+  Fn1(r) {
+    return seqMap(r.Primitive.skip(Arrow), r.Primitive, Function1)
+  },
+  Fn2(r) {
+    return seqMap(r.Primitive.skip(Div), r.Primitive.skip(Arrow), r.Primitive, Function2)
+  },
+  Fn3(r) {
+    return seqMap(r.Primitive.skip(Div), r.Primitive.skip(Div), r.Primitive.skip(Arrow), r.Primitive, Function3)
+  },
+  Fn4(r) {
+    return seqMap(r.Primitive.skip(Div), r.Primitive.skip(Div), r.Primitive.skip(Div), r.Primitive.skip(Arrow), r.Primitive, Function4)
+  },
+  Fn5(r) {
+    return seqMap(r.Primitive.skip(Div), r.Primitive.skip(Div), r.Primitive.skip(Div), r.Primitive.skip(Div), r.Primitive.skip(Arrow), r.Primitive, Function5)
+  },
+
+  // TODO: Change Primitive -> Node
+  Intersection(r) {
+    return seqMap(
+      r.Primitive.skip(optWhitespace).skip(string('&')).skip(optWhitespace),
+      r.Primitive,
+      Intersection
+    )
+    .desc('Intersection')
+  },
+
+  List(r) {
+    return seqMap(alt(r.Simple, r.Generic), string('[]'), List)
+      .desc('List')
+  },
+
+  Primitive(r) {
+    return alt(r.List, r.Simple, r.Generic)
+      .desc('List, Generic type, or Concrete type')
+  },
+
   Simple() {
     return alt(
       string('boolean'),
@@ -26,83 +77,61 @@ let Lang: TypedRule<Spec> = {
       string('string'),
       string('undefined'),
       string('void')
-    ).map(_ => Simple(_ as Simples))
-  },
-
-  Generic() {
-    return regexp(/([A-Z][\w\d]*)/)
-      .map(([A, b]) => Generic(A + (b || '')))
-  },
-
-  Arrow() {
-    return optWhitespace.then(alt(string('->'), string('=>'))).then(optWhitespace).desc('Arrow')
-  },
-
-  Div() {
-    return alt(
-      optWhitespace.then(string(',')).then(optWhitespace),
-      whitespace.atLeast(1)
     )
-    .desc(',')
+      .map(_ => Simple(_ as Simples))
+      .desc('Concrete type')
   },
 
-  Fn(r) {
-    return alt(r.Fn0, r.Fn1, r.Fn2, r.Fn3, r.Fn4, r.Fn5)
-  },
-
-  Fn0(r) {
-    return seqMap(r.Arrow.then(r.Primitive), Function0)
-  },
-  Fn1(r) {
-    return seqMap(r.Primitive.skip(r.Arrow), r.Primitive, Function1)
-  },
-  Fn2(r) {
-    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function2)
-  },
-  Fn3(r) {
-    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function3)
-  },
-  Fn4(r) {
-    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function4)
-  },
-  Fn5(r) {
-    return seqMap(r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Div), r.Primitive.skip(r.Arrow), r.Primitive, Function5)
-  },
-
-  List(r) {
-    return seqMap(alt(r.Simple, r.Generic), string('[]'), List)
-  },
-
-  Node(r) {
-    return alt(r.Fn, r.List, r.Simple, r.Generic)
-  },
-
-  Primitive(r) {
-    return alt(r.List, r.Simple, r.Generic)
+  // TODO: Change Primitive -> Node
+  Union(r) {
+    return seqMap(
+      r.Primitive.skip(optWhitespace).skip(string('|')).skip(optWhitespace),
+      r.Primitive,
+      Union
+    )
+    .desc('Union')
   }
 }
 
-let Language = createLanguage(Lang)
+let Arrow = optWhitespace
+  .then(alt(string('->'), string('=>')))
+  .then(optWhitespace)
+  .desc('Arrow')
+
+let Div = alt(
+    optWhitespace.then(string(',')).then(optWhitespace),
+    whitespace.atLeast(1)
+  )
+  .desc(',')
+
+let Language = createLanguage(Spec)
+
+let Node = alt(
+  Language.Intersection,
+  Language.Union,
+  Language.List,
+  Language.Fn,
+  Language.Simple,
+  Language.Generic
+)
+  .desc('Node')
+
+// let Expr = alt(
+//   string('(').then(Node).skip(string(')')),
+//   Node
+// )
 
 export function parse(input: string): Node {
-  let r = Language.Node.parse(input)
+  let r = Node.parse(input)
   if (r.status) {
     return r.value
   }
-  throw r.expected
+  throw {...r, given: input}
 }
 
 // Types
 
-type Node = Function0<any>
-  | Function1<any, any>
-  | Function2<any, any, any>
-  | Function3<any, any, any, any>
-  | Function4<any, any, any, any, any>
-  | Function5<any, any, any, any, any, any>
-  | Generic
-  | List<any>
-  | Simple<any>
+type Node = Spec[keyof Spec]
 
 type Function0<A extends Node> = {
   to: A
@@ -154,6 +183,12 @@ type Generic = {
   type: 'Generic'
 }
 
+type Intersection<A extends Node, B extends Node> = {
+  left: A
+  right: B
+  type: 'Intersection'
+}
+
 type Simple<A extends Simples> = {
   of: A
   type: 'Simple'
@@ -164,6 +199,12 @@ type Simples = 'boolean' | 'number' | 'null' | 'string' | 'undefined' | 'void'
 type List<A extends Node> = {
   of: A
   type: 'List'
+}
+
+type Union<A extends Node, B extends Node> = {
+  left: A
+  right: B
+  type: 'Union'
 }
 
 export function Function0<A extends Node>(to: A): Function0<A> {
@@ -194,10 +235,18 @@ export function Generic(name: string): Generic {
   return { type: 'Generic', name }
 }
 
+export function Intersection<A extends Node, B extends Node>(left: A, right: B): Intersection<A, B> {
+  return { type: 'Intersection', left, right }
+}
+
 export function List<A extends Node>(of: A): List<A> {
   return { type: 'List', of }
 }
 
 export function Simple<A extends Simples>(of: A): Simple<A> {
   return { type: 'Simple', of }
+}
+
+export function Union<A extends Node, B extends Node>(left: A, right: B): Union<A, B> {
+  return { type: 'Union', left, right }
 }
